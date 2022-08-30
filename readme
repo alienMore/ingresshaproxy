@@ -1,0 +1,426 @@
+1. Зашёл в Установка и удаление программ, опцию "Пакеты с графическим интерфейсом" переключил на "Все" и в поиске вбил keyfuzz. Установил из репозитария.
+
+2. Выполнил команду:
+echo 2 | sudo tee /sys/module/hid_apple/parameters/fnmode
+
+3.
+sudo dracut -f
+
+4.
+lsinitrd | grep hid
+
+-docker-
+
++-------------------------------------------------------------------------------------------------------------------+
+| in /usr/lib/systemd/system/docker.servic
+|                                                                                                  
+| ExecStart=/usr/bin/dockerd --default-ulimit nofile=65536:65536 -H fd:// --containerd=/run/containerd/containerd.sock |
++----------------------------------------------------------------------------------------------------------------------+
+
+git clone https://github.com/oracle/docker-images.git
+
+docker build -f Dockerfile.generic-8 -t adminserver/weblogic:14.1.1.0-generic .
+docker build -f Dockerfile.generic-8 --default-ulimit nofile=65536:65536 -t oracle/weblogic:14.1.1.0-generic .
+docker build --build-arg ADMIN_PASSWORD=Password1 -t 1213-domain .
+
+смотреть какие images есть на компьютере
+
+docker images
+
+docker run oracle/weblogic:14.1.1.0-generic
++--------------------------------------------------------------------------------------------------------------------------------
+| docker run oracle/weblogic:14.1.1.0-generic ls -al
+| docker run oracle/weblogic:14.1.1.0-generic ls -al /u01/oracle/wlserver/server
+| docker run --name weblogic oracle/weblogic:14.1.1.0-generic 
+| docker run --name AdminServer --hostname=AdminServer -p 7001:7001 --env-file ./container-scripts/domain.properties -e ADMIN_PASSWORD=Password1
+| docker run -d --name AdminServer --hostname=AdminServer -p 7001:7001 -e ADMINISTRATION_PORT_ENABLED=false adminserver/weblogic:14.1.1.0-generic
+| docker run -d --link AdminServer:AdminServer -p 7002:7002 adminserver/weblogic:14.1.1.0-generic createServer.sh
+| docker run -d --name AdminServer --hostname=AdminServer -p 7001:7001 -e ADMINISTRATION_PORT_ENABLED=false oracle/weblogic:14.1.1.0-generic
+|
+| docker run -d --name 1213domain -p 7001:7001 -e ADMINISTRATION_PORT_ENABLED=false 1213-domain:latest
+| docker run -d --name AdminServer --hostname=AdminServer -p 7001:7001 -e ADMINISTRATION_PORT_ENABLED=false 1213-domain:latest
+| docker start AdminServer; docker stop AdminServer
++--------------------------------------------------------------------------------------------------------------------------------
+docker run -d --name AdminServer --hostname AdminServer --add-host node1:172.17.0.3 -p 7001:7001 tnt/weblogic:14.1.1.0-generic
+docker run -d --name node1 --hostname node1 --link AdminServer:AdminServer tnt/weblogic:14.1.1.0-generic
+docker run -d --name node1 --hostname node1 --link AdminServer:AdminServer tnt/weblogic:14.1.1.0-generic
+docker run -d --name node1 --hostname node1 -p 7003:7003 tnt/weblogic:14.1.1.0-generic
+docker run --name node1 --hostname node1 -p 7003:7003 tnt/weblogic:14.1.1.0-generic
+---
+docker-compose up --build
+docker-compose down -> остановка и удаление контейнера
+[19:01 admin@localhost:14.1.1.0]$docker-compose ps
+   Name              Command           State                    Ports                  
+---------------------------------------------------------------------------------------
+AdminServer   /opt/dm/wls/startWL.sh   Up      0.0.0.0:7001->7001/tcp,:::7001->7001/tcp
+[20:36 admin@localhost:14.1.1.0]$docker-compose images
+ Container     Repository          Tag            Image Id      Size  
+----------------------------------------------------------------------
+AdminServer   tnt/weblogic   14.1.1.0-generic   c57e1f5b4e15   2.25 GB
+[20:37 admin@localhost:14.1.1.0]$
+
+
+# Войти в командную оболочку в контейнере
+docker exec -it oracle/weblogic:14.1.1.0-generic sh
+docker exec -it weblogic /bin/bash
+docker exec -it AdminServerTNT /bin/bash
+docker exec -it node1 /bin/bash
+docker exec -it haproxy sh
+docker network ls
+docker network inspect weblogicNET
+docker network inspect <NetworkName>
+docker network rm <NetworkName>
+
+
+HAProxy version 2.4.17-9f97155 2022/05/13 - https://haproxy.org/
+
+docker rmi tnt/weblogic:14.1.1.0-generic
+
+cat << EOF > epel.repo
+[epel]
+name=Extra Packages for Enterprise Linux $releasever - $basearch
+# It is much more secure to use the metalink, but if you wish to use a local mirror
+# place it's address here.
+#baseurl=https://download.example/pub/epel/$releasever/Everything/$basearch
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=1
+gpgcheck=1
+countme=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+
+[epel-debuginfo]
+name=Extra Packages for Enterprise Linux $releasever - $basearch - Debug
+# It is much more secure to use the metalink, but if you wish to use a local mirror
+# place it's address here.
+#baseurl=https://download.example/pub/epel/$releasever/Everything/$basearch/debug
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-debug-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+gpgcheck=1
+
+[epel-source]
+name=Extra Packages for Enterprise Linux $releasever - $basearch - Source
+# It is much more secure to use the metalink, but if you wish to use a local mirror
+# place it's address here.
+#baseurl=https://download.example/pub/epel/$releasever/Everything/SRPMS
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-source-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+gpgcheck=1
+EOF
+
+
+[wlsadmin@AdminServer Oracle_Home]$ find /opt/dm/wls/ -name 'wls.jar'
+/opt/dm/wls/Oracle_Home/wlserver/common/templates/wls/wls.jar
+
+[wlsadmin@AdminServer wls]$ ll
+total 32
+drwxr-x--- 1 wlsadmin wlsadmin 4096 May 23 12:06 Oracle_Home
+-rwxrwxr-x 1 wlsadmin wlsadmin 3096 May 23 10:40 create-wls-domain.py
+-rwxrwxr-x 1 wlsadmin wlsadmin 2438 May 22 13:50 createAndStartEmptyDomain.sh
+-rwxrwxr-x 1 wlsadmin wlsadmin  370 May  9 21:17 get_healthcheck_url.sh
+drwxrwx--- 1 wlsadmin wlsadmin 4096 May 23 11:59 oraInventory
+drwxr-xr-x 1 wlsadmin wlsadmin 4096 May 23 12:02 properties
+drwxr-x--- 3 wlsadmin wlsadmin 4096 May 23 12:06 user_projects
+[wlsadmin@AdminServer wls]$ pwd
+/opt/dm/wls
+[wlsadmin@AdminServer wls]$ 
+--------------------------
+drwxr-x--- 1 wlsadmin wlsadmin 4096 May 23 12:00 OPatch
+drwxr-x--- 1 wlsadmin wlsadmin 4096 May 23 12:00 coherence
+-rw-r----- 1 wlsadmin wlsadmin  201 May 23 12:06 domain-registry.xml
+drwxr-x--- 1 wlsadmin wlsadmin 4096 May 23 12:00 inventory
+-rw-r----- 1 wlsadmin wlsadmin  130 May 23 12:00 oraInst.loc
+drwxr-x--- 1 wlsadmin wlsadmin 4096 May 23 12:00 oracle_common
+drwxr-x--- 1 wlsadmin wlsadmin 4096 May 23 12:00 oui
+drwxr-xr-x 2 wlsadmin wlsadmin 4096 May 23 12:05 properties
+-rwx------ 1 wlsadmin wlsadmin   10 May 23 11:59 root.sh
+drwxr-x--- 1 wlsadmin wlsadmin 4096 May 23 12:00 wlserver
+[wlsadmin@AdminServer Oracle_Home]$ pwd
+/opt/dm/wls/Oracle_Home
+[wlsadmin@AdminServer Oracle_Home]$ 
+
+DOMAIN_NAME=tnt
+
+- gitlab ce -
+
+docker login 192.168.10.28:5555
+Username: denis
+Password: 
+Error response from daemon: Get "https://192.168.10.28:5555/v2/": x509: certificate specifies an incompatible key usage
+[21:12 admin@localhost:14.1.1.0]$docker login 192.168.10.28:5555
+Username: denis
+Password: 
+WARNING! Your password will be stored unencrypted in /home/admin/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
++--------------------------------------------+
+|docker pull haproxytech/haproxy-alpine:2.4  |
+|docker pull haproxy:2.4-alpine              |
++--------------------------------------------+
+-Выгрузить образ в архив tar-
+docker save -o haproxy_2.4-alpine.tar haproxy:2.4-alpine
+docker save -o centos_latest.tar centos:latest
+docker save -o centos7.tar centos:7
+docker save -o redhat_ubi8-minimal:latest.tar redhat/ubi8-minimal:latest 
+
+разбить архив
+split -b 40m redhat_ubi8-minimal:latest.tar rh_minimal_8
+split -b 40m redhat_ubi8-minimal:latest.tar <prefix>
+
+собрать обратно
+cat home.tar.bz2.parta* > backup.tar.bz2.joined
+
+
+
+# загрузим образы из архива в среду Docker
+docker load -i ubuntu-16+18.tar
+
+
+[21:43 admin@localhost:14.1.1.0]$docker images
+REPOSITORY                                      TAG                IMAGE ID       CREATED       SIZE
+192.168.10.28:5555/denis/repo1                  14.1.1.0-generic   c57e1f5b4e15   7 days ago    2.25GB
+tnt/weblogic                                    14.1.1.0-generic   c57e1f5b4e15   7 days ago    2.25GB
+base/weblogic                                   14.1.1.0-generic   b068648aefac   2 weeks ago   2.25GB
+haproxy                                         2.4-alpine         46362f4f0f65   2 weeks ago   20.5MB
+
+docker push 192.168.10.28:5555/denis/repo1:14.1.1.0-generic
+docker push 192.168.10.28:5555/weblogic/tnt:tnt-14.1.1.0-generic
+docker push 192.168.10.28:5555/tnt/weblogic:tnt-12.2.1.3.0-generic
+docker push 192.168.10.28:5555/weblogic/tnt:base-14.1.1.0-generic
+docker push 192.168.10.28:5555/tnt/haproxy:tnt-haproxy-2.4-alpine
+
+Чтобы закачать имеющийся image который не принадлежит нашему локальному registry (например скачали из глобального
+репозитория haproxy и хотим перенести его к нам в локальный)
+
+добавим teg c указанием нашего локального репозитория к имеющемуся образу haproxy
+docker tag <tag имеющегося image> <>
+docker tag 46362f4f0f65 192.168.10.28:5555/tnt/haproxy:tnt-haproxy-2.4-alpine
+docker tag 9d81e53dd6bc 192.168.10.28:5555/tnt/weblogic:tnt-14.1.1.0-generic
+docker tag 1d50950ef0bf 192.168.10.28:5555/global/images:weblogic-base-14.1.1.0-generic
+
+docker push 192.168.10.28:5555/tnt/haproxy:tnt-haproxy-2.4-alpine
+docker push 192.168.10.28:5555/tnt/weblogic:tnt-14.1.1.0-generic
+docker push 192.168.10.28:5555/global/images:weblogic-base-14.1.1.0-generic
+docker push 192.168.10.28:5555/global/images:weblogic-base-12.2.1.3.0-generic
+docker push 192.168.10.28:5555/global/images:haproxy-2.4-alpine
+docker push 192.168.10.28:5555/tnt/haproxy:tnt-haproxy-2.4-alpine
+
++------------------
+| Скачать докер-образ nginx
+| docker pull nginx
++------------------
+
+Создать jar архив
+jar cvf manifest.jar -C META-INF .
+
+. /opt/dm/wls/user_projects/domains/tnt/bin/setDomainEnv.sh && java weblogic.WLST
+nmConnect('weblogic', 'Password1', 'node0', '5556', 'tnt', '/opt/dm/wls/user_projects/domains/tnt', 'ssl');
+nmStart('node0_1');
+nmStart('node0_0');nmStart('node0_1');
+nmDisconnect();
+exit();
+
+
+start('node0_0', 'Server', block='false');
+
+[wlsadmin@node0 nodemanager]$ cat node0_0.state
+RUNNING:Y:N
+
+
+Создание файла ключа и пользователя для weblogic
+
+. /opt/dm/wls/user_projects/domains/tnt/bin/setDomainEnv.sh && java weblogic.WLST
+connect('weblogic', 'Password1', 't3://localhost:7001');
+connect('weblogic', 'Password1', 't3://AdminServer:7001');
+storeUserConfig('/opt/docker/weblogic/OracleWebLogic/dockerfiles/12.2.1.3_new/container-scripts/userConfigFile', '/opt/docker/weblogic/OracleWebLogic/dockerfiles/12.2.1.3_new/container-scripts/userKeyFile', nm='false');
+exit();
+
+/opt/dm/wls/Oracle_Home/wlserver/common/templates/wls/wls.jar
+readTemplate("/opt/dm/wls/Oracle_Home/wlserver/common/templates/wls/wls.jar") -> The readTemplate is deprecated. Use selectTemplate followed by loadTemplates in place of readTemplate
+selectTemplate("/opt/dm/wls/Oracle_Home/wlserver/common/templates/wls/wls.jar");
+loadTemplates("/opt/dm/wls/Oracle_Home/wlserver/common/templates/wls/wls.jar");
+addTemplate('/opt/dm/wls/Oracle_Home/wlserver/common/templates/wls/wls.jar');
+
+-если домен уже есть? то просто читаем его и делаем необходимые изменения-
+readDomain('/opt/dm/wls/user_projects/domains/tnt');
+readDomainForUpgrade("/opt/dm/wls/user_projects/domains/tnt");
+
+#SSL on server
+create('node0_1', 'SSL');
+cd('SSL/node0_1');
+set('Enabled','true');
+set('ListenPort',8001);
+
+cd('/Servers/node0_0/SSL/node0_0');
+
+#add arguments
+cd('/Servers/');
+create
+
+cd('/');
+#cd('Machine');
+create('MachineTNT_node2', 'Machine');
+assign('Server', 'node0_0,node0_1', 'Machine', 'MachineTNT_node2');
+cd('Machines/MachineTNT_node2');
+create('MachineTNT_node2', 'NodeManager');
+cd('NodeManager/MachineTNT_node2');
+set('NMType', 'SSL');
+set('ListenAddress', 'localhost');
+set('DebugEnable', 'false');
+
+updateDomain();
+closeDomain();
+exit();
+
+
+
+
++------------------------------------------+
+| tar -cvzf AddMachines.tar.gz AddMachines |
+| tar -cvzf AddServers.tar.gz AddServers   |
+| tar -cvzf DeployApps.tar.gz DeployApps   |
++------------------------------------------+
+tar -cvzf AddMachines.tar.gz AddMachines && tar -cvzf AddServers.tar.gz AddServers
+
+
+/opt/jdk1.8.0_231/bin/javac -classpath ./AddMachines/lib/*:/opt/dm/wls/Oracle_Home/oui/modules/*:/opt/dm/wls/Oracle_Home/wlserver/*.jar:/opt/dm/wls/Oracle_Home/wlserver/server/lib/*:/opt/dm/wls/Oracle_Home/oracle_common/modules/*:/opt/dm/wls/Oracle_Home/oracle_common/rda/da/lib/*.jar: -d ./AddMachines/bin AddMachines/src/addmachines/App.java
+
+Убрать ^M
+perl -p -i -e "s/\r\n/\n/;" filename
+
+Удалить все пробелы
+sed 's/ //g' MANIFEST.MF > no-spaces.txt
+
+Убрать перенос строки
+cat no-spaces.txt | tr -d '\n' > line
+
+
+cat new2line | awk '{ for (i=1; i<=NF; i++) if ($i ~ /jar$/) print $i }'
+
+/opt/docker/weblogic/OracleWebLogic/dockerfiles/12.2.1.3_new/container-scripts/config.json
+
+tocken github -> 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
+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
+
+git remote add origin https://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@github.com/alienMore/WeblogicInDocker.git
+git remote add origin https://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@github.com/alienMore/WeblogicInDocker.git
+
+- gitlab runner install -
+
+Downloads
+https://packages.gitlab.com/runner/gitlab-runner/packages/fedora/35/gitlab-runner-15.1.0-1.x86_64.rpm
+
+systemctl enable gitlab-runner --now
+[13:05 root@localhost:Downloads]#systemctl status gitlab-runner
+
+
+docker run --name gitlab-runner --restart always \
+-v /opt/GitlabRunner/1/gitlab-runner/config:/etc/gitlab-runner \
+-v /var/run/docker.sock:/var/run/docker.sock \
+gitlab/gitlab-runner:latest
+
+docker exec -it gitlab-runner /bin/bash
+
+- Регистрация runner на сервере Gitlab -
+
+gitlab-runner register \
+  --non-interactive \
+  --url https://192.168.10.28/ \
+  --registration-token AgCy3tHajtHwmh3YwxHz \
+  --executor shell \
+  #--docker-image alpine:latest \
+  --description docker-runner \
+  --maintenance-note Free-form maintainer notes about this runner \
+  --tag-list weblogic \
+  --run-untagged=true \
+  --locked=false \
+  --access-level=not_protected
+
+gitlab-runner register \
+  --non-interactive \
+  --url https://192.168.10.28/ \
+  --tls-ca-file /etc/gitlab-runner/CA.cer \
+  --registration-token AgCy3tHajtHwmh3YwxHz \
+  --executor shell \
+  --description docker-runner \
+  --maintenance-note Free-form maintainer notes about this runner \
+  --tag-list weblogic \
+  --run-untagged=true \
+  --locked=false \
+  --access-level=not_protected
+
+
+gitlab-runner register \
+      --non-interactive \
+      --registration-token YOUTOKEN \
+      --url https://example.com/ \
+      --tls-ca-file /path/to/your/ca.crt
+
+
+- Клонировали конкретный branch -
+git clone --branch weblogic https://192.168.10.28/tnt/scripts.git
+
+-Добавили удаленный репозиторий с именем weeblogic-
+git remote add weblogic https://192.168.10.28/tnt/scripts.git
+
+git push <remote> <branch>
+
+
+- Helm install -
+curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > install-helm.sh
+
+-rwxrw-r-- 1 admin admin 6666 Jul 11 15:38 install-helm.sh
+[15:39 admin@localhost:helm]$./install-helm.sh
+Downloading https://get.helm.sh/helm-v2.17.0-linux-amd64.tar.gz
+Preparing to install helm and tiller into /usr/local/bin
+[sudo] password for admin: 
+helm installed into /usr/local/bin/helm
+tiller installed into /usr/local/bin/tiller
+Run 'helm init' to configure helm.
+
+- Установка Tiller -
+Чтобы он мог взаимодействовать с kubernetes кластером создадим в kubernetes ресурс Kubernetes serviceaccount.
+
+Создадим serviceaccount для tiller:
+kubectl -n kube-system create serviceaccount tiller
+
+Затем мы привяжем serviceaccount tiller к роли cluster-admin:
+kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
+
+После создания сервис-аккаунта и привязке его к роли можно запустить helm init для установки Tiller в нашем кластере, а также выполнения ряда локальных задач, таких как загрузка данных репозитория stable:
+
+[15:39 admin@localhost:helm]$helm init --service-account tiller
+Creating /home/admin/.helm 
+Creating /home/admin/.helm/repository 
+Creating /home/admin/.helm/repository/cache 
+Creating /home/admin/.helm/repository/local 
+Creating /home/admin/.helm/plugins 
+Creating /home/admin/.helm/starters 
+Creating /home/admin/.helm/cache/archive 
+Creating /home/admin/.helm/repository/repositories.yaml 
+Adding stable repo with URL: https://charts.helm.sh/stable 
+Adding local repo with URL: http://127.0.0.1:8879/charts 
+$HELM_HOME has been configured at /home/admin/.helm.
+Error: error installing: Post "http://localhost:8080/apis/apps/v1/namespaces/kube-system/deployments": dial tcp [::1]:8080: connect: connection refused
+
+
+Отладка запуска пода в кубернетес
+helm create <name любое>
+helm create nginx
+
+helm install --name nginx --dry-run --debug ./nginx
+
+Запуск в кубернетесе
+helm install ./nginx
+
+helm upgrade innocent-greyhound ./nginx
+
+
+START/STOP nodes
+
+/opt/dm/wls/user_projects/domains/tnt/bin/nodemanager/wlscontrol.sh -d tnt -r /opt/dm/wls/user_projects/domains/tnt -c -f /opt/dm/wls/user_projects/domains/tnt/bin/startManagedWebLogic.sh -s node0_1 START
+/opt/dm/wls/user_projects/domains/tnt/bin/startManagedWebLogic.sh node0_1 http://adminserver:7001
+
